@@ -1,7 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'image-stitcher'
-  s.version     = '0.0.1'
-  s.date        = '2016-08-15'
+  s.version     = '0.2.0'
   s.summary     = "Combine continuous multiple images"
   s.description = s.summary
   s.authors     = ["Shintaro Morikawa"]
