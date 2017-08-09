@@ -6,24 +6,27 @@ require 'ruby-progressbar'
 
 DEFAULT_OUTPUT_FILENAME = 'output.png'.freeze
 DEFAULT_OVERLAP_HEIGHT = 15
+DEFAULT_FIXED_FOOTER_HEIGHT = 0
 
-options = ARGV.getopts('', 'help', 'h', 'output:', 'o:', 'overlap-height:')
-if ARGV.empty? || options['h'] || options['help']
-  puts 'usage: stitch [--output output.png] [--overlap-height 15] 1.png 2.png 3.png'
+options = ARGV.getopts('', 'help', 'o:', 'output:', 'overlap-height:', 'fixed-footer-height:')
+if ARGV.empty? || options['help']
+  puts 'usage: stitch [--output output.png] [--overlap-height 15] [--fixed-footer-height 50] 1.png 2.png 3.png'
   exit(0)
 end
-output_file = options['o'] || DEFAULT_OUTPUT_FILENAME
+output_file = options['o'] || options['output'] || DEFAULT_OUTPUT_FILENAME
 overlap_height = (options['overlap-height'] || DEFAULT_OVERLAP_HEIGHT).to_i
+fixed_footer_height = (options['fixed-footer-height'] || DEFAULT_FIXED_FOOTER_HEIGHT).to_i
 
 source_images = Magick::ImageList.new(*ARGV)
 progress_bar = ProgressBar.create(total: source_images.size)
 result = source_images.inject do |previous_image, image|
   combined = Magick::ImageList.new
-  combined.push(previous_image.crop(Magick::NorthGravity, previous_image.columns, previous_image.rows - overlap_height))
-  bottom_of_previous_image = previous_image.crop(Magick::SouthGravity, previous_image.columns, overlap_height)
+  combined.push(previous_image.crop(Magick::NorthGravity, previous_image.columns, previous_image.rows - fixed_footer_height - overlap_height))
+  bottom_of_previous_image = previous_image.crop(0, previous_image.rows - fixed_footer_height - overlap_height, previous_image.columns, overlap_height)
+  image_is_last = (image == source_images.last)
   (image.rows - bottom_of_previous_image.rows).times.each do |row|
     if bottom_of_previous_image == image.crop(Magick::NorthGravity, 0, row, image.columns, overlap_height)
-      combined.push(image.crop(Magick::NorthGravity, 0, row, image.columns, image.rows - row))
+      combined.push(image.crop(Magick::NorthGravity, 0, row, image.columns, image.rows - (image_is_last ? 0 : fixed_footer_height) - row))
       break
     end
     if row == image.rows - bottom_of_previous_image.rows - 1
